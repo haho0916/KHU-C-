@@ -1,0 +1,88 @@
+#include <iostream>
+#include <vector>
+#include <ctime>
+#include <fstream>
+#include <Windows.h>
+using namespace std;
+
+class Queue {
+public:
+    Queue() { NI = 0; NO = 0; capacity = 0; }
+    ~Queue() {}
+    Queue(int NI, int NO, int cap) {
+        this->NI = NI;
+        this->NO = NO;
+        this->capacity = cap;
+    }
+
+    int NI, NO, capacity;
+
+    float anal_fullness(int packetNum) {
+        return float(packetNum) / float(capacity);
+    }
+    float anal_lossrate(int loss, int totalPacket) {
+        return float(loss) / float(totalPacket);
+    }
+    void enqueue(int* ni, vector<int>& queue, int* loss) {
+        *ni = rand() % NI;
+        for (int i = 0; i < *ni; i++) {
+            if (queue.size() < capacity)
+                queue.push_back(rand() % 20);
+            if (queue.size() >= capacity)
+                *loss += 1;
+        }
+    }
+    void dequeue(int* no, vector<int>& queue) {
+        if (queue.size() != 0) {
+            *no = rand() % NO;
+            for (int i = 0; i < *no; i++) {
+                queue.erase(queue.begin());
+                if (queue.size() == 0) break;
+            }
+        }
+    }
+    void addNO() {
+        NO += 1;
+    }
+};
+
+int main() {
+    srand(time(0)); // for the actual random value, control the seed by synchronizing with the time 
+    ofstream anal, compare;
+    compare.open("analog.txt");
+
+    const int numQueues = 5; 
+    const int numExperiments = 5; 
+    vector<Queue> queues; // vector of queues
+
+    for (int exp = 0; exp < numExperiments; ++exp) {
+        // add queue to vector
+        for (int i = 0; i < numQueues; ++i) {
+            queues.push_back(Queue(50, 50, 100)); // NI 50 NO 50 CAP 100
+        }
+
+      
+        for (int i = 0; i < numQueues; ++i) {
+            vector<int> q;
+            int loss = 0;
+            for (int j = 0; j < 1000; ++j) { // Simulation time 
+                int ni = 0, no = 0;
+                queues[i].enqueue(&ni, q, &loss);
+                queues[i].dequeue(&no, q);
+            }
+            
+            //result
+            cout << "Experiment " << exp + 1 << ", Queue " << i + 1 << " Results:" << endl;
+            cout << "Loss: " << loss << endl;
+            cout << "Fullness: " << queues[i].anal_fullness(q.size()) << endl;
+            cout << "Loss Rate: " << queues[i].anal_lossrate(loss, q.size()) << endl;
+            cout << endl;
+        }
+
+        // 벡터를 비워 다음 실험을 위해 준비
+        queues.clear();
+    }
+
+    compare.close();
+    return 0;
+}
